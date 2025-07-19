@@ -2,245 +2,291 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monroe - Brow</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fff;
-      margin: 20px;
-      color: #000;
-    }
-    h1 {
-      text-align: center;
-      color: #007acc;
-      font-size: 28px;
-    }
-    input, button, textarea {
-      font-size: 18px;
-      padding: 10px;
-      margin: 5px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    button {
-      cursor: pointer;
-      background-color: #3399ff;
-      color: white;
-      border: none;
-      transition: 0.3s;
-    }
-    button:hover {
-      background-color: #007acc;
-    }
-    .btn-green { background-color: #28a745; }
-    .btn-green:hover { background-color: #1e7e34; }
-    .btn-red { background-color: #e63946; }
-    .btn-red:hover { background-color: #b71c1c; }
-    .result {
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 10px;
-      margin-top: 10px;
-      background-color: #f9f9f9;
-    }
-    .result img {
-      max-width: 100%;
-      max-height: 200px;
-      display: block;
-      margin: 5px 0;
-    }
-    .highlight {
-      background-color: #cce5ff;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.5);
-    }
-    .modal-content {
-      background-color: #fff;
-      margin: 15% auto;
-      padding: 20px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
-      text-align: center;
-    }
-    .modal-content h3, .modal-content h2 {
-      margin-bottom: 20px;
-    }
-    .modal-buttons {
-      display: flex;
-      justify-content: space-around;
-      margin-top: 20px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Monroe - Recherche de pièce</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background:#fff;
+    margin:20px;
+    color:#000;
+  }
+  h1 {
+    text-align:center;
+    color:#007acc;
+    font-size:28px;
+  }
+  input,button,textarea {
+    font-size:18px;
+    padding:10px;
+    margin:5px 0;
+    border:1px solid #ccc;
+    border-radius:6px;
+    width:100%;
+    box-sizing:border-box;
+  }
+  button {
+    cursor:pointer;
+    background-color:#3399ff;
+    color:#fff;
+    border:none;
+    transition:0.3s;
+  }
+  button:hover { background-color:#007acc; }
+  .btn-green{background-color:#28a745;}
+  .btn-green:hover{background-color:#1e7e34;}
+  .btn-red{background-color:#e63946;}
+  .btn-red:hover{background-color:#b71c1c;}
+  .result{
+    border:1px solid #ddd;
+    border-radius:6px;
+    padding:10px;
+    margin-top:10px;
+    background-color:#f9f9f9;
+  }
+  .result img{
+    max-width:100%;
+    max-height:200px;
+    display:block;
+    margin:5px 0;
+  }
+  .highlight{background-color:#cce5ff;}
+  .modal{
+    display:none;
+    position:fixed;
+    z-index:1000;
+    left:0;top:0;
+    width:100%;height:100%;
+    background:rgba(0,0,0,0.5);
+  }
+  .modal-content{
+    background:#fff;
+    margin:15% auto;
+    padding:20px;
+    border-radius:10px;
+    width:90%;
+    max-width:400px;
+    text-align:center;
+  }
+  .modal-buttons{
+    display:flex;
+    justify-content:space-around;
+    margin-top:20px;
+  }
+</style>
 </head>
 <body>
-  <h1>Monroe - Recherche de pièce</h1>
+<h1>Monroe - Recherche de pièce</h1>
 
-  <input type="text" id="searchInput" placeholder="Numéro de pièce" />
-  <button onclick="rechercher()">Chercher</button>
-  <button class="btn-green" onclick="openAjouter()">Enregistrer</button>
+<input type="text" id="searchInput" placeholder="Numéro de pièce" />
+<button onclick="rechercher()">Chercher</button>
+<button class="btn-green" onclick="openAjouter()">Enregistrer</button>
 
-  <div id="results"></div>
+<div id="results"></div>
 
-  <!-- Modal d'ajout -->
-  <div id="modal" class="modal">
-    <div class="modal-content">
-      <h2>Ajouter une pièce</h2>
-      <input type="text" id="refInput" placeholder="Numéro de pièce" />
-      <textarea id="descInput" placeholder="Description"></textarea>
-      <input type="file" id="imgFile" accept="image/*" />
-      <button class="btn-green" onclick="ajouter()">Valider</button>
-      <button onclick="closeAjouter()">Annuler</button>
+<!-- Modal d'ajout -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h2>Ajouter une pièce</h2>
+    <input type="text" id="refInput" placeholder="Numéro de pièce" />
+    <textarea id="descInput" placeholder="Description"></textarea>
+    <input type="file" id="imgFile" accept="image/*" />
+    <button class="btn-green" onclick="ajouter()">Valider</button>
+    <button onclick="closeAjouter()">Annuler</button>
+  </div>
+</div>
+
+<!-- Modal confirmation suppression -->
+<div id="confirmModal" class="modal">
+  <div class="modal-content">
+    <h3>Supprimer cet élément ?</h3>
+    <div class="modal-buttons">
+      <button class="btn-red" onclick="confirmDelete()">Oui</button>
+      <button onclick="closeConfirm()">Non</button>
     </div>
   </div>
+</div>
 
-  <!-- Modal de confirmation de suppression -->
-  <div id="confirmModal" class="modal">
-    <div class="modal-content">
-      <h3>Supprimer cet élément ?</h3>
-      <div class="modal-buttons">
-        <button class="btn-red" onclick="confirmDelete()">Oui</button>
-        <button onclick="closeConfirm()">Non</button>
-      </div>
-    </div>
-  </div>
+<script>
+/* =========================
+   PERSISTENCE (localStorage)
+   ========================= */
+const STORAGE_KEY = 'monroe_pieces_v1';
 
-  <script>
-    // Charger la base de données depuis localStorage ou créer une nouvelle
-    let baseDeDonnees = JSON.parse(localStorage.getItem('baseDeDonnees') || '[]');
+/* Valeurs par défaut (تظهر فقط أول مرة لو لا يوجد حفظ سابق) */
+const DEFAULT_DATA = [
+  { ref:"0280218002", description:"Débitmètre Bosch pour VW Golf", image:"" },
+  { ref:"1234567890", description:"Capteur de pression carburant", image:"" },
+  { ref:"ABC123",     description:"Capteur ABS avant gauche",      image:"" }
+];
 
-    let itemToDelete = null;
+/* تحميل من localStorage */
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [...DEFAULT_DATA];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [...DEFAULT_DATA];
+    return arr;
+  } catch(e) {
+    console.warn('Erreur loadData:', e);
+    return [...DEFAULT_DATA];
+  }
+}
 
-    function sauvegarder() {
-      localStorage.setItem('baseDeDonnees', JSON.stringify(baseDeDonnees));
-    }
+/* حفظ إلى localStorage */
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(baseDeDonnees));
+}
 
-    function afficherResultats(data, motsRecherche) {
-      const container = document.getElementById('results');
-      container.innerHTML = '';
-      if (data.length === 0) {
-        container.innerHTML = '<p>Aucun résultat.</p>';
-        return;
-      }
-      data.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'result';
-        const ref = highlightText('Référence : ' + item.ref, motsRecherche);
-        const desc = highlightText(item.description, motsRecherche);
-        div.innerHTML = `
-          <button class="btn-red" onclick="askDelete('${item.ref}')">Supprimer</button>
-          ${item.image ? `<img src="${item.image}" alt="${item.ref}" />` : '<p><i>Pas d\'image</i></p>'}
-          <p>${ref}</p>
-          <p>${desc}</p>
-        `;
-        container.appendChild(div);
-      });
-    }
+/* المتغير العام */
+let baseDeDonnees = loadData();
+let itemToDelete = null;
 
-    function highlightText(text, mots) {
-      if (!mots || mots.length === 0) return text;
-      mots.forEach(m => {
-        const regex = new RegExp(m, 'gi');
-        text = text.replace(regex, match => `<span class="highlight">${match}</span>`);
-      });
-      return text;
-    }
+/* =========================
+   AFFICHAGE RESULTATS
+   ========================= */
+function afficherResultats(data, motsRecherche) {
+  const container = document.getElementById('results');
+  container.innerHTML = '';
+  if (data.length === 0) {
+    container.innerHTML = '<p>Aucun résultat.</p>';
+    return;
+  }
+  data.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'result';
+    const ref = highlightText('Référence : ' + item.ref, motsRecherche);
+    const desc = highlightText(item.description, motsRecherche);
+    div.innerHTML = `
+      <button class="btn-red" onclick="askDelete('${escapeQuotes(item.ref)}')">Supprimer</button>
+      ${item.image ? `<img src="${item.image}" alt="${escapeQuotes(item.ref)}" />` : '<p><i>Pas d\'image</i></p>'}
+      <p>${ref}</p>
+      <p>${desc}</p>
+    `;
+    container.appendChild(div);
+  });
+}
 
-    function rechercher() {
-      const query = document.getElementById('searchInput').value.trim().toLowerCase();
-      const mots = query.split(' ').filter(Boolean);
+/* تمييز الكلمات */
+function highlightText(text, mots) {
+  if (!mots || mots.length === 0) return text;
+  mots.forEach(m => {
+    const regex = new RegExp(escapeRegex(m), 'gi');
+    text = text.replace(regex, match => `<span class="highlight">${match}</span>`);
+  });
+  return text;
+}
 
-      if (!query) {
-        document.getElementById('results').innerHTML = "<p>Veuillez entrer une référence.</p>";
-        return;
-      }
+/* هروب regex */
+function escapeRegex(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function escapeQuotes(s){return s.replace(/'/g,"\\'");}
 
-      let results = baseDeDonnees.filter(item =>
-        mots.every(m => item.ref.toLowerCase().includes(m) || item.description.toLowerCase().includes(m))
-      );
+/* =========================
+   RECHERCHE
+   ========================= */
+function rechercher() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const mots = query.split(' ').filter(Boolean);
 
-      if (results.length === 0) {
-        results = baseDeDonnees.filter(item =>
-          mots.some(m => item.ref.toLowerCase().includes(m) || item.description.toLowerCase().includes(m))
-        );
-      }
+  /* لو لا يوجد بحث => عرض كل العناصر */
+  if (!query) {
+    afficherResultats(baseDeDonnees, []);
+    return;
+  }
 
-      afficherResultats(results, mots);
-    }
+  /* Recherche stricte (AND) */
+  let results = baseDeDonnees.filter(item =>
+    mots.every(m =>
+      item.ref.toLowerCase().includes(m) ||
+      item.description.toLowerCase().includes(m)
+    )
+  );
 
-    function openAjouter() {
-      document.getElementById('modal').style.display = 'block';
-    }
-    function closeAjouter() {
-      document.getElementById('modal').style.display = 'none';
-      clearForm();
-    }
+  /* Recherche élargie (OR) */
+  if (results.length === 0) {
+    results = baseDeDonnees.filter(item =>
+      mots.some(m =>
+        item.ref.toLowerCase().includes(m) ||
+        item.description.toLowerCase().includes(m)
+      )
+    );
+  }
 
-    function clearForm() {
-      document.getElementById('refInput').value = '';
-      document.getElementById('descInput').value = '';
-      document.getElementById('imgFile').value = '';
-    }
+  afficherResultats(results, mots);
+}
 
-    function ajouter() {
-      const ref = document.getElementById('refInput').value.trim();
-      const desc = document.getElementById('descInput').value.trim();
-      const fileInput = document.getElementById('imgFile');
+/* =========================
+   AJOUT
+   ========================= */
+function openAjouter() {
+  document.getElementById('modal').style.display = 'block';
+}
+function closeAjouter() {
+  document.getElementById('modal').style.display = 'none';
+  clearForm();
+}
+function clearForm() {
+  document.getElementById('refInput').value = '';
+  document.getElementById('descInput').value = '';
+  document.getElementById('imgFile').value = '';
+}
 
-      if (ref && desc) {
-        if (fileInput.files && fileInput.files[0]) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            baseDeDonnees.push({ ref, description: desc, image: e.target.result });
-            sauvegarder();
-            closeAjouter();
-            rechercher();
-          };
-          reader.readAsDataURL(fileInput.files[0]);
-        } else {
-          baseDeDonnees.push({ ref, description: desc, image: "" });
-          sauvegarder();
-          closeAjouter();
-          rechercher();
-        }
-      } else {
-        alert('Veuillez remplir Référence et Description.');
-      }
-    }
+function ajouter() {
+  const ref  = document.getElementById('refInput').value.trim();
+  const desc = document.getElementById('descInput').value.trim();
+  const fileInput = document.getElementById('imgFile');
 
-    function askDelete(ref) {
-      itemToDelete = ref;
-      document.getElementById('confirmModal').style.display = 'block';
-    }
-    function closeConfirm() {
-      document.getElementById('confirmModal').style.display = 'none';
-      itemToDelete = null;
-    }
-    function confirmDelete() {
-      if (itemToDelete) {
-        baseDeDonnees = baseDeDonnees.filter(item => item.ref !== itemToDelete);
-        sauvegarder();
-        closeConfirm();
-        rechercher();
-      }
-    }
+  if (!ref || !desc) {
+    alert('Veuillez remplir Référence et Description.');
+    return;
+  }
 
-    // Optionnel : rechercher عند تحميل الصفحة تلقائياً لإظهار كل العناصر
-    window.onload = function() {
-      rechercher();
-    }
-  </script>
+  /* صورة؟ */
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e){
+      baseDeDonnees.push({ ref, description:desc, image:e.target.result });
+      saveData();
+      closeAjouter();
+      rechercher(); /* لتحديث العرض */
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    baseDeDonnees.push({ ref, description:desc, image:"" });
+    saveData();
+    closeAjouter();
+    rechercher();
+  }
+}
+
+/* =========================
+   SUPPRESSION
+   ========================= */
+function askDelete(ref) {
+  itemToDelete = ref;
+  document.getElementById('confirmModal').style.display = 'block';
+}
+function closeConfirm() {
+  document.getElementById('confirmModal').style.display = 'none';
+  itemToDelete = null;
+}
+function confirmDelete() {
+  if (!itemToDelete) return;
+  baseDeDonnees = baseDeDonnees.filter(item => item.ref !== itemToDelete);
+  saveData();
+  closeConfirm();
+  rechercher();
+}
+
+/* =========================
+   AU CHARGEMENT
+   ========================= */
+window.addEventListener('DOMContentLoaded', () => {
+  /* عرض كل العناصر عند الفتح */
+  afficherResultats(baseDeDonnees, []);
+});
+</script>
 </body>
 </html>
