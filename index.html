@@ -2,291 +2,139 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Monroe - Recherche de pièce</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background:#fff;
-    margin:20px;
-    color:#000;
-  }
-  h1 {
-    text-align:center;
-    color:#007acc;
-    font-size:28px;
-  }
-  input,button,textarea {
-    font-size:18px;
-    padding:10px;
-    margin:5px 0;
-    border:1px solid #ccc;
-    border-radius:6px;
-    width:100%;
-    box-sizing:border-box;
-  }
-  button {
-    cursor:pointer;
-    background-color:#3399ff;
-    color:#fff;
-    border:none;
-    transition:0.3s;
-  }
-  button:hover { background-color:#007acc; }
-  .btn-green{background-color:#28a745;}
-  .btn-green:hover{background-color:#1e7e34;}
-  .btn-red{background-color:#e63946;}
-  .btn-red:hover{background-color:#b71c1c;}
-  .result{
-    border:1px solid #ddd;
-    border-radius:6px;
-    padding:10px;
-    margin-top:10px;
-    background-color:#f9f9f9;
-  }
-  .result img{
-    max-width:100%;
-    max-height:200px;
-    display:block;
-    margin:5px 0;
-  }
-  .highlight{background-color:#cce5ff;}
-  .modal{
-    display:none;
-    position:fixed;
-    z-index:1000;
-    left:0;top:0;
-    width:100%;height:100%;
-    background:rgba(0,0,0,0.5);
-  }
-  .modal-content{
-    background:#fff;
-    margin:15% auto;
-    padding:20px;
-    border-radius:10px;
-    width:90%;
-    max-width:400px;
-    text-align:center;
-  }
-  .modal-buttons{
-    display:flex;
-    justify-content:space-around;
-    margin-top:20px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalogue Pièces Auto</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #fff; margin: 20px; color: #000; }
+    h1 { text-align: center; color: #007acc; }
+    input, button, textarea {
+      font-size: 16px; padding: 8px; margin: 5px 0; width: 100%;
+      border: 1px solid #ccc; border-radius: 5px;
+    }
+    button { cursor: pointer; background: #007acc; color: #fff; border: none; }
+    button:hover { background: #005f99; }
+    .item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; background: #f9f9f9; }
+    .item img { max-width: 100%; max-height: 150px; }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
 </head>
 <body>
-<h1>Monroe - Recherche de pièce</h1>
+  <h1>Catalogue Pièces Auto</h1>
 
-<input type="text" id="searchInput" placeholder="Numéro de pièce" />
-<button onclick="rechercher()">Chercher</button>
-<button class="btn-green" onclick="openAjouter()">Enregistrer</button>
+  <input type="text" id="searchInput" placeholder="Numéro de pièce" />
+  <button onclick="rechercher()">Chercher</button>
+  <button onclick="openAjouter()">Ajouter</button>
 
-<div id="results"></div>
+  <div id="results"></div>
 
-<!-- Modal d'ajout -->
-<div id="modal" class="modal">
-  <div class="modal-content">
+  <!-- Modal d'ajout -->
+  <div id="addModal" style="display:none;">
     <h2>Ajouter une pièce</h2>
     <input type="text" id="refInput" placeholder="Numéro de pièce" />
     <textarea id="descInput" placeholder="Description"></textarea>
-    <input type="file" id="imgFile" accept="image/*" />
-    <button class="btn-green" onclick="ajouter()">Valider</button>
+    <input type="file" id="imgInput" accept="image/*" />
+    <button onclick="ajouter()">Valider</button>
     <button onclick="closeAjouter()">Annuler</button>
   </div>
-</div>
 
-<!-- Modal confirmation suppression -->
-<div id="confirmModal" class="modal">
-  <div class="modal-content">
-    <h3>Supprimer cet élément ?</h3>
-    <div class="modal-buttons">
-      <button class="btn-red" onclick="confirmDelete()">Oui</button>
-      <button onclick="closeConfirm()">Non</button>
-    </div>
-  </div>
-</div>
-
-<script>
-/* =========================
-   PERSISTENCE (localStorage)
-   ========================= */
-const STORAGE_KEY = 'monroe_pieces_v1';
-
-/* Valeurs par défaut (تظهر فقط أول مرة لو لا يوجد حفظ سابق) */
-const DEFAULT_DATA = [
-  { ref:"0280218002", description:"Débitmètre Bosch pour VW Golf", image:"" },
-  { ref:"1234567890", description:"Capteur de pression carburant", image:"" },
-  { ref:"ABC123",     description:"Capteur ABS avant gauche",      image:"" }
-];
-
-/* تحميل من localStorage */
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [...DEFAULT_DATA];
-    const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return [...DEFAULT_DATA];
-    return arr;
-  } catch(e) {
-    console.warn('Erreur loadData:', e);
-    return [...DEFAULT_DATA];
-  }
-}
-
-/* حفظ إلى localStorage */
-function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(baseDeDonnees));
-}
-
-/* المتغير العام */
-let baseDeDonnees = loadData();
-let itemToDelete = null;
-
-/* =========================
-   AFFICHAGE RESULTATS
-   ========================= */
-function afficherResultats(data, motsRecherche) {
-  const container = document.getElementById('results');
-  container.innerHTML = '';
-  if (data.length === 0) {
-    container.innerHTML = '<p>Aucun résultat.</p>';
-    return;
-  }
-  data.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'result';
-    const ref = highlightText('Référence : ' + item.ref, motsRecherche);
-    const desc = highlightText(item.description, motsRecherche);
-    div.innerHTML = `
-      <button class="btn-red" onclick="askDelete('${escapeQuotes(item.ref)}')">Supprimer</button>
-      ${item.image ? `<img src="${item.image}" alt="${escapeQuotes(item.ref)}" />` : '<p><i>Pas d\'image</i></p>'}
-      <p>${ref}</p>
-      <p>${desc}</p>
-    `;
-    container.appendChild(div);
-  });
-}
-
-/* تمييز الكلمات */
-function highlightText(text, mots) {
-  if (!mots || mots.length === 0) return text;
-  mots.forEach(m => {
-    const regex = new RegExp(escapeRegex(m), 'gi');
-    text = text.replace(regex, match => `<span class="highlight">${match}</span>`);
-  });
-  return text;
-}
-
-/* هروب regex */
-function escapeRegex(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
-function escapeQuotes(s){return s.replace(/'/g,"\\'");}
-
-/* =========================
-   RECHERCHE
-   ========================= */
-function rechercher() {
-  const query = document.getElementById('searchInput').value.trim().toLowerCase();
-  const mots = query.split(' ').filter(Boolean);
-
-  /* لو لا يوجد بحث => عرض كل العناصر */
-  if (!query) {
-    afficherResultats(baseDeDonnees, []);
-    return;
-  }
-
-  /* Recherche stricte (AND) */
-  let results = baseDeDonnees.filter(item =>
-    mots.every(m =>
-      item.ref.toLowerCase().includes(m) ||
-      item.description.toLowerCase().includes(m)
-    )
-  );
-
-  /* Recherche élargie (OR) */
-  if (results.length === 0) {
-    results = baseDeDonnees.filter(item =>
-      mots.some(m =>
-        item.ref.toLowerCase().includes(m) ||
-        item.description.toLowerCase().includes(m)
-      )
-    );
-  }
-
-  afficherResultats(results, mots);
-}
-
-/* =========================
-   AJOUT
-   ========================= */
-function openAjouter() {
-  document.getElementById('modal').style.display = 'block';
-}
-function closeAjouter() {
-  document.getElementById('modal').style.display = 'none';
-  clearForm();
-}
-function clearForm() {
-  document.getElementById('refInput').value = '';
-  document.getElementById('descInput').value = '';
-  document.getElementById('imgFile').value = '';
-}
-
-function ajouter() {
-  const ref  = document.getElementById('refInput').value.trim();
-  const desc = document.getElementById('descInput').value.trim();
-  const fileInput = document.getElementById('imgFile');
-
-  if (!ref || !desc) {
-    alert('Veuillez remplir Référence et Description.');
-    return;
-  }
-
-  /* صورة؟ */
-  if (fileInput.files && fileInput.files[0]) {
-    const reader = new FileReader();
-    reader.onload = function(e){
-      baseDeDonnees.push({ ref, description:desc, image:e.target.result });
-      saveData();
-      closeAjouter();
-      rechercher(); /* لتحديث العرض */
+  <script>
+    // ------------------- FIREBASE -------------------
+    const firebaseConfig = {
+      apiKey: "VOTRE_API_KEY",
+      authDomain: "VOTRE_PROJET.firebaseapp.com",
+      projectId: "VOTRE_PROJET",
+      storageBucket: "VOTRE_PROJET.appspot.com",
+      messagingSenderId: "XXX",
+      appId: "XXX"
     };
-    reader.readAsDataURL(fileInput.files[0]);
-  } else {
-    baseDeDonnees.push({ ref, description:desc, image:"" });
-    saveData();
-    closeAjouter();
-    rechercher();
-  }
-}
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-/* =========================
-   SUPPRESSION
-   ========================= */
-function askDelete(ref) {
-  itemToDelete = ref;
-  document.getElementById('confirmModal').style.display = 'block';
-}
-function closeConfirm() {
-  document.getElementById('confirmModal').style.display = 'none';
-  itemToDelete = null;
-}
-function confirmDelete() {
-  if (!itemToDelete) return;
-  baseDeDonnees = baseDeDonnees.filter(item => item.ref !== itemToDelete);
-  saveData();
-  closeConfirm();
-  rechercher();
-}
+    // ------------------- LOCALSTORAGE -------------------
+    let baseDeDonnees = JSON.parse(localStorage.getItem("pieces")) || [];
 
-/* =========================
-   AU CHARGEMENT
-   ========================= */
-window.addEventListener('DOMContentLoaded', () => {
-  /* عرض كل العناصر عند الفتح */
-  afficherResultats(baseDeDonnees, []);
-});
-</script>
+    function saveLocal() {
+      localStorage.setItem("pieces", JSON.stringify(baseDeDonnees));
+    }
+
+    // ------------------- AFFICHAGE -------------------
+    function afficher(data) {
+      const container = document.getElementById("results");
+      container.innerHTML = "";
+      if (!data.length) {
+        container.innerHTML = "<p>Aucun résultat.</p>";
+        return;
+      }
+      data.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          ${item.image ? `<img src="${item.image}" alt="${item.ref}" />` : "<i>Pas d'image</i>"}
+          <p><b>Réf:</b> ${item.ref}</p>
+          <p>${item.description}</p>
+          <button onclick="supprimer(${index})">Supprimer</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // ------------------- RECHERCHE -------------------
+    function rechercher() {
+      const val = document.getElementById("searchInput").value.trim().toLowerCase();
+      const res = baseDeDonnees.filter(x =>
+        x.ref.toLowerCase().includes(val) || x.description.toLowerCase().includes(val)
+      );
+      afficher(res);
+    }
+
+    // ------------------- AJOUT -------------------
+    function openAjouter() { document.getElementById("addModal").style.display = "block"; }
+    function closeAjouter() { document.getElementById("addModal").style.display = "none"; }
+
+    function ajouter() {
+      const ref = document.getElementById("refInput").value.trim();
+      const desc = document.getElementById("descInput").value.trim();
+      const file = document.getElementById("imgInput").files[0];
+
+      if (!ref || !desc) { alert("Champs obligatoires !"); return; }
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          baseDeDonnees.push({ ref, description: desc, image: e.target.result });
+          saveLocal();
+          syncFirebase(ref, desc, e.target.result);
+          closeAjouter();
+          rechercher();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        baseDeDonnees.push({ ref, description: desc, image: "" });
+        saveLocal();
+        syncFirebase(ref, desc, "");
+        closeAjouter();
+        rechercher();
+      }
+    }
+
+    // ------------------- SUPPRIMER -------------------
+    function supprimer(i) {
+      if (confirm("Supprimer cet élément ?")) {
+        baseDeDonnees.splice(i, 1);
+        saveLocal();
+        rechercher();
+      }
+    }
+
+    // ------------------- FIREBASE SYNC -------------------
+    function syncFirebase(ref, desc, img) {
+      db.collection("pieces").add({ ref, description: desc, image: img });
+    }
+
+    // ------------------- INIT -------------------
+    afficher(baseDeDonnees);
+  </script>
 </body>
 </html>
