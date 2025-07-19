@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -20,6 +21,9 @@
     border: 1px solid #ddd;
     border-radius: 6px;
   }
+  input[type="file"] {
+    margin-top: 6px;
+  }
   button {
     font-size: 18px; padding: 10px 15px; margin-left: 10px;
     border: none; border-radius: 6px; cursor: pointer; color: white;
@@ -30,18 +34,24 @@
   .result-item {
     border: 1px solid #ddd; padding: 15px; border-radius: 8px;
     margin-bottom: 15px; display: flex; gap: 15px; align-items: center;
+    color: black; /* default black text */
   }
   .result-item img { width: 120px; height: 80px; object-fit: contain; border-radius: 6px; background: #f0f0f0; }
   .result-info { flex-grow: 1; }
-  .result-info strong { display: block; font-size: 18px; margin-bottom: 6px; }
-  .result-info p { margin: 0; font-size: 16px; }
+  .result-info strong {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 6px;
+    color: blue; /* رقم القطعة باللون الأزرق */
+  }
+  .result-info p { margin: 0; font-size: 16px; color: black; }
   .btn-delete { background-color: #cc3333; padding: 8px 12px; font-size: 16px; }
   #add-form {
     display: none; max-width: 600px; margin: 0 auto 20px;
     padding: 15px; border: 1px solid #ddd; border-radius: 8px;
   }
   #add-form label { display: block; margin-top: 10px; font-weight: bold; }
-  #add-form input[type="text"] {
+  #add-form input[type="text"], #add-form input[type="file"] {
     width: 100%; padding: 8px; margin-top: 6px;
     font-size: 16px; border-radius: 6px; border: 1px solid #ccc;
   }
@@ -63,8 +73,8 @@
   <input type="text" id="ref-input" placeholder="Ex: 0280218002" />
   <label for="desc-input">Description</label>
   <input type="text" id="desc-input" placeholder="Description de la pièce" />
-  <label for="img-input">Lien image (URL)</label>
-  <input type="text" id="img-input" placeholder="https://exemple.com/image.jpg" />
+  <label for="img-file-input">Choisir une image depuis la galerie</label>
+  <input type="file" id="img-file-input" accept="image/*" />
   <button id="btn-add">Valider</button>
 </div>
 
@@ -73,7 +83,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
-  // Config Firebase (سأضع لك إعدادات جاهزة)
+  // Config Firebase - ضع بياناتك هنا كما في المثال السابق
   const firebaseConfig = {
     apiKey: "AIzaSyXXXXX-XXXXXXX-XXXXXXX",
     authDomain: "pieces-auto.firebaseapp.com",
@@ -86,7 +96,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // البيانات محلياً
   let pieces = JSON.parse(localStorage.getItem('pieces')) || [];
 
   const searchInput = document.getElementById('search-input');
@@ -94,6 +103,21 @@
   const addForm = document.getElementById('add-form');
   const btnShowAdd = document.getElementById('btn-show-add');
   const btnAdd = document.getElementById('btn-add');
+  const imgFileInput = document.getElementById('img-file-input');
+
+  let imageBase64 = ""; // لتخزين صورة القطعة المختارة
+
+  // قراءة الصورة المختارة وتحويلها لـ base64
+  imgFileInput.addEventListener('change', function(event){
+    const file = event.target.files[0];
+    if(file) {
+      const reader = new FileReader();
+      reader.onload = function(e){
+        imageBase64 = e.target.result; // صورة مشفرة بصيغة base64
+      }
+      reader.readAsDataURL(file);
+    }
+  });
 
   // تحميل البيانات من Firebase عند بدء التشغيل
   function chargerDepuisFirebase() {
@@ -105,13 +129,47 @@
     });
   }
 
-  // Afficher la liste filtrée
+  // دالة Levenshtein المسافة لبحث ذكي بسيط
+  function levenshtein(a, b) {
+    if(!a || !b) return Math.max(a.length, b.length);
+    const matrix = Array.from({length: a.length+1}, () => []);
+    for(let i=0; i<=a.length; i++) matrix[i][0] = i;
+    for(let j=0; j<=b.length; j++) matrix[0][j] = j;
+    for(let i=1; i<=a.length; i++) {
+      for(let j=1; j<=b.length; j++) {
+        matrix[i][j] = Math.min(
+          matrix[i-1][j] + 1,
+          matrix[i][j-1] +1,
+          matrix[i-1][j-1] + (a[i-1]===b[j-1] ? 0 :1)
+        );
+      }
+    }
+    return matrix[a.length][b.length];
+  }
+
+  // بحث ذكي: قبول نتائج مع المسافة أقل من حد معين
+  function rechercherPiecesAvecAI(filter='') {
+    filter = filter.toLowerCase().trim();
+    if(!filter) return pieces;
+
+    const seuilDistance = 3; // الحد الأقصى للمسافة المقبولة
+
+    return pieces.filter(item => {
+      const ref = item.ref.toLowerCase();
+      const desc = item.description.toLowerCase();
+
+      // مسافة ليڤنشتاين أقل من الحد
+      const distRef = levenshtein(filter, ref);
+      const distDesc = levenshtein(filter, desc);
+
+      return ref.includes(filter) || desc.includes(filter) || distRef <= seuilDistance || distDesc <= seuilDistance;
+    });
+  }
+
+  // عرض النتائج مع تلوين رقم القطعة باللون الأزرق
   function afficherResultats(filter='') {
     resultsDiv.innerHTML = '';
-    let filtered = pieces.filter(item => {
-      const searchLower = filter.toLowerCase();
-      return item.ref.toLowerCase().includes(searchLower) || item.description.toLowerCase().includes(searchLower);
-    });
+    let filtered = rechercherPiecesAvecAI(filter);
 
     if(filtered.length === 0){
       resultsDiv.innerHTML = '<p style="text-align:center; color:#777;">Aucun résultat trouvé.</p>';
@@ -165,7 +223,6 @@
   btnAdd.onclick = () => {
     const ref = document.getElementById('ref-input').value.trim();
     const desc = document.getElementById('desc-input').value.trim();
-    const img = document.getElementById('img-input').value.trim();
 
     if(!ref || !desc) {
       alert('Veuillez remplir le numéro de pièce et la description.');
@@ -177,15 +234,21 @@
       return;
     }
 
+    // استخدم صورة الـ base64 إذا اختارها المستخدم، وإلا اجعل الصورة فارغة
+    const img = imageBase64 || '';
+
     const newPiece = {ref, description: desc, image: img};
     pieces.push(newPiece);
     sauvegarderPieces();
     db.ref('pieces/' + ref).set(newPiece);
     afficherResultats(searchInput.value);
 
+    // إعادة تعيين الحقول
     document.getElementById('ref-input').value = '';
     document.getElementById('desc-input').value = '';
-    document.getElementById('img-input').value = '';
+    imgFileInput.value = '';
+    imageBase64 = '';
+
     addForm.style.display = 'none';
   };
 
@@ -201,7 +264,7 @@
     afficherResultats(searchInput.value);
   });
 
-  // Initialisation
+  // بدء التطبيق بتحميل البيانات من Firebase
   chargerDepuisFirebase();
 </script>
 </body>
