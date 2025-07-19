@@ -1,140 +1,208 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catalogue Pièces Auto</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #fff; margin: 20px; color: #000; }
-    h1 { text-align: center; color: #007acc; }
-    input, button, textarea {
-      font-size: 16px; padding: 8px; margin: 5px 0; width: 100%;
-      border: 1px solid #ccc; border-radius: 5px;
-    }
-    button { cursor: pointer; background: #007acc; color: #fff; border: none; }
-    button:hover { background: #005f99; }
-    .item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; background: #f9f9f9; }
-    .item img { max-width: 100%; max-height: 150px; }
-  </style>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Recherche de pièce détachée</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fff;
+    margin: 20px;
+    color: #000;
+  }
+  h1 { text-align: center; color: #007acc; }
+  #search-container, #add-container { max-width: 600px; margin: 10px auto; }
+  input[type="text"] {
+    width: calc(100% - 110px);
+    font-size: 18px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+  }
+  button {
+    font-size: 18px; padding: 10px 15px; margin-left: 10px;
+    border: none; border-radius: 6px; cursor: pointer; color: white;
+  }
+  #btn-search { background-color: #3399ff; }
+  #btn-show-add { background-color: #28a745; margin-top: 20px; }
+  #results { max-width: 600px; margin: 20px auto; }
+  .result-item {
+    border: 1px solid #ddd; padding: 15px; border-radius: 8px;
+    margin-bottom: 15px; display: flex; gap: 15px; align-items: center;
+  }
+  .result-item img { width: 120px; height: 80px; object-fit: contain; border-radius: 6px; background: #f0f0f0; }
+  .result-info { flex-grow: 1; }
+  .result-info strong { display: block; font-size: 18px; margin-bottom: 6px; }
+  .result-info p { margin: 0; font-size: 16px; }
+  .btn-delete { background-color: #cc3333; padding: 8px 12px; font-size: 16px; }
+  #add-form {
+    display: none; max-width: 600px; margin: 0 auto 20px;
+    padding: 15px; border: 1px solid #ddd; border-radius: 8px;
+  }
+  #add-form label { display: block; margin-top: 10px; font-weight: bold; }
+  #add-form input[type="text"] {
+    width: 100%; padding: 8px; margin-top: 6px;
+    font-size: 16px; border-radius: 6px; border: 1px solid #ccc;
+  }
+  #add-form button { margin-top: 15px; background-color: #007acc; }
+</style>
 </head>
 <body>
-  <h1>Catalogue Pièces Auto</h1>
 
-  <input type="text" id="searchInput" placeholder="Numéro de pièce" />
-  <button onclick="rechercher()">Chercher</button>
-  <button onclick="openAjouter()">Ajouter</button>
+<h1>Recherche de pièce détachée</h1>
 
-  <div id="results"></div>
+<div id="search-container">
+  <input type="text" id="search-input" placeholder="Numéro de pièce ou description..." />
+  <button id="btn-search">Chercher</button>
+  <button id="btn-show-add">Ajouter une pièce</button>
+</div>
 
-  <!-- Modal d'ajout -->
-  <div id="addModal" style="display:none;">
-    <h2>Ajouter une pièce</h2>
-    <input type="text" id="refInput" placeholder="Numéro de pièce" />
-    <textarea id="descInput" placeholder="Description"></textarea>
-    <input type="file" id="imgInput" accept="image/*" />
-    <button onclick="ajouter()">Valider</button>
-    <button onclick="closeAjouter()">Annuler</button>
-  </div>
+<div id="add-form">
+  <label for="ref-input">Numéro de pièce</label>
+  <input type="text" id="ref-input" placeholder="Ex: 0280218002" />
+  <label for="desc-input">Description</label>
+  <input type="text" id="desc-input" placeholder="Description de la pièce" />
+  <label for="img-input">Lien image (URL)</label>
+  <input type="text" id="img-input" placeholder="https://exemple.com/image.jpg" />
+  <button id="btn-add">Valider</button>
+</div>
 
-  <script>
-    // ------------------- FIREBASE -------------------
-    const firebaseConfig = {
-      apiKey: "VOTRE_API_KEY",
-      authDomain: "VOTRE_PROJET.firebaseapp.com",
-      projectId: "VOTRE_PROJET",
-      storageBucket: "VOTRE_PROJET.appspot.com",
-      messagingSenderId: "XXX",
-      appId: "XXX"
-    };
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+<div id="results"></div>
 
-    // ------------------- LOCALSTORAGE -------------------
-    let baseDeDonnees = JSON.parse(localStorage.getItem("pieces")) || [];
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+  // Config Firebase (سأضع لك إعدادات جاهزة)
+  const firebaseConfig = {
+    apiKey: "AIzaSyXXXXX-XXXXXXX-XXXXXXX",
+    authDomain: "pieces-auto.firebaseapp.com",
+    databaseURL: "https://pieces-auto-default-rtdb.firebaseio.com",
+    projectId: "pieces-auto",
+    storageBucket: "pieces-auto.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdefg123456"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    function saveLocal() {
-      localStorage.setItem("pieces", JSON.stringify(baseDeDonnees));
+  // البيانات محلياً
+  let pieces = JSON.parse(localStorage.getItem('pieces')) || [];
+
+  const searchInput = document.getElementById('search-input');
+  const resultsDiv = document.getElementById('results');
+  const addForm = document.getElementById('add-form');
+  const btnShowAdd = document.getElementById('btn-show-add');
+  const btnAdd = document.getElementById('btn-add');
+
+  // تحميل البيانات من Firebase عند بدء التشغيل
+  function chargerDepuisFirebase() {
+    db.ref('pieces').once('value', snapshot => {
+      const data = snapshot.val() || {};
+      pieces = Object.values(data);
+      sauvegarderPieces();
+      afficherResultats();
+    });
+  }
+
+  // Afficher la liste filtrée
+  function afficherResultats(filter='') {
+    resultsDiv.innerHTML = '';
+    let filtered = pieces.filter(item => {
+      const searchLower = filter.toLowerCase();
+      return item.ref.toLowerCase().includes(searchLower) || item.description.toLowerCase().includes(searchLower);
+    });
+
+    if(filtered.length === 0){
+      resultsDiv.innerHTML = '<p style="text-align:center; color:#777;">Aucun résultat trouvé.</p>';
+      return;
     }
 
-    // ------------------- AFFICHAGE -------------------
-    function afficher(data) {
-      const container = document.getElementById("results");
-      container.innerHTML = "";
-      if (!data.length) {
-        container.innerHTML = "<p>Aucun résultat.</p>";
-        return;
-      }
-      data.forEach((item, index) => {
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `
-          ${item.image ? `<img src="${item.image}" alt="${item.ref}" />` : "<i>Pas d'image</i>"}
-          <p><b>Réf:</b> ${item.ref}</p>
-          <p>${item.description}</p>
-          <button onclick="supprimer(${index})">Supprimer</button>
-        `;
-        container.appendChild(div);
-      });
+    filtered.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'result-item';
+
+      const img = document.createElement('img');
+      img.src = item.image || 'https://via.placeholder.com/120x80?text=No+Image';
+      img.alt = item.ref;
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'result-info';
+
+      const refStrong = document.createElement('strong');
+      refStrong.textContent = 'Référence : ' + item.ref;
+
+      const descP = document.createElement('p');
+      descP.textContent = item.description;
+
+      infoDiv.appendChild(refStrong);
+      infoDiv.appendChild(descP);
+
+      const btnDel = document.createElement('button');
+      btnDel.className = 'btn-delete';
+      btnDel.textContent = 'Supprimer';
+      btnDel.onclick = () => {
+        if(confirm(`Supprimer la pièce "${item.ref}" ?`)) {
+          pieces = pieces.filter(p => p.ref !== item.ref);
+          sauvegarderPieces();
+          db.ref('pieces/' + item.ref).remove();
+          afficherResultats(searchInput.value);
+        }
+      };
+
+      div.appendChild(img);
+      div.appendChild(infoDiv);
+      div.appendChild(btnDel);
+
+      resultsDiv.appendChild(div);
+    });
+  }
+
+  function sauvegarderPieces() {
+    localStorage.setItem('pieces', JSON.stringify(pieces));
+  }
+
+  btnAdd.onclick = () => {
+    const ref = document.getElementById('ref-input').value.trim();
+    const desc = document.getElementById('desc-input').value.trim();
+    const img = document.getElementById('img-input').value.trim();
+
+    if(!ref || !desc) {
+      alert('Veuillez remplir le numéro de pièce et la description.');
+      return;
     }
 
-    // ------------------- RECHERCHE -------------------
-    function rechercher() {
-      const val = document.getElementById("searchInput").value.trim().toLowerCase();
-      const res = baseDeDonnees.filter(x =>
-        x.ref.toLowerCase().includes(val) || x.description.toLowerCase().includes(val)
-      );
-      afficher(res);
+    if(pieces.some(p => p.ref.toLowerCase() === ref.toLowerCase())) {
+      alert('Cette référence existe déjà.');
+      return;
     }
 
-    // ------------------- AJOUT -------------------
-    function openAjouter() { document.getElementById("addModal").style.display = "block"; }
-    function closeAjouter() { document.getElementById("addModal").style.display = "none"; }
+    const newPiece = {ref, description: desc, image: img};
+    pieces.push(newPiece);
+    sauvegarderPieces();
+    db.ref('pieces/' + ref).set(newPiece);
+    afficherResultats(searchInput.value);
 
-    function ajouter() {
-      const ref = document.getElementById("refInput").value.trim();
-      const desc = document.getElementById("descInput").value.trim();
-      const file = document.getElementById("imgInput").files[0];
+    document.getElementById('ref-input').value = '';
+    document.getElementById('desc-input').value = '';
+    document.getElementById('img-input').value = '';
+    addForm.style.display = 'none';
+  };
 
-      if (!ref || !desc) { alert("Champs obligatoires !"); return; }
+  btnShowAdd.onclick = () => {
+    addForm.style.display = (addForm.style.display === 'block') ? 'none' : 'block';
+  };
 
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          baseDeDonnees.push({ ref, description: desc, image: e.target.result });
-          saveLocal();
-          syncFirebase(ref, desc, e.target.result);
-          closeAjouter();
-          rechercher();
-        };
-        reader.readAsDataURL(file);
-      } else {
-        baseDeDonnees.push({ ref, description: desc, image: "" });
-        saveLocal();
-        syncFirebase(ref, desc, "");
-        closeAjouter();
-        rechercher();
-      }
-    }
+  document.getElementById('btn-search').onclick = () => {
+    afficherResultats(searchInput.value);
+  };
 
-    // ------------------- SUPPRIMER -------------------
-    function supprimer(i) {
-      if (confirm("Supprimer cet élément ?")) {
-        baseDeDonnees.splice(i, 1);
-        saveLocal();
-        rechercher();
-      }
-    }
+  searchInput.addEventListener('keyup', () => {
+    afficherResultats(searchInput.value);
+  });
 
-    // ------------------- FIREBASE SYNC -------------------
-    function syncFirebase(ref, desc, img) {
-      db.collection("pieces").add({ ref, description: desc, image: img });
-    }
-
-    // ------------------- INIT -------------------
-    afficher(baseDeDonnees);
-  </script>
+  // Initialisation
+  chargerDepuisFirebase();
+</script>
 </body>
 </html>
