@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Recherche de pièce détachée</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fff;
+    margin: 20px;
+    color: #000;
+  }
+  h1 {
+    text-align: center;
+    color: #007acc;
+  }
+  #search-container, #add-container {
+    max-width: 600px;
+    margin: 10px auto;
+  }
+  input[type="text"] {
+    width: calc(100% - 110px);
+    font-size: 18px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+  button {
+    font-size: 18px;
+    padding: 10px 15px;
+    margin-left: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+  }
+  #btn-search {
+    background-color: #3399ff;
+  }
+  #btn-show-add {
+    background-color: #28a745;
+    margin-top: 20px;
+  }
+  #results {
+    max-width: 600px;
+    margin: 20px auto;
+  }
+  .result-item {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+  }
+  .result-item img {
+    width: 120px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #f0f0f0;
+  }
+  .result-info {
+    flex-grow: 1;
+  }
+  .result-info strong {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+  .result-info p {
+    margin: 0;
+    font-size: 16px;
+  }
+  .btn-delete {
+    background-color: #cc3333;
+    padding: 8px 12px;
+    font-size: 16px;
+  }
+  #add-form {
+    display: none;
+    max-width: 600px;
+    margin: 0 auto 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+  #add-form label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+  }
+  #add-form input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    margin-top: 6px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  #add-form button {
+    margin-top: 15px;
+    background-color: #007acc;
+  }
+</style>
+</head>
+<body>
+
+<h1>Recherche de pièce détachée</h1>
+
+<div id="search-container">
+  <input type="text" id="search-input" placeholder="Numéro de pièce ou description..." />
+  <button id="btn-search">Chercher</button>
+  <button id="btn-show-add">Ajouter une pièce</button>
+</div>
+
+<div id="add-form">
+  <label for="ref-input">Numéro de pièce</label>
+  <input type="text" id="ref-input" placeholder="Ex: 0280218002" />
+  <label for="desc-input">Description</label>
+  <input type="text" id="desc-input" placeholder="Description de la pièce" />
+  <label for="img-input">Lien image (URL)</label>
+  <input type="text" id="img-input" placeholder="https://exemple.com/image.jpg" />
+  <button id="btn-add">Valider</button>
+</div>
+
+<div id="results"></div>
+
+<script>
+  // Charger les données du localStorage ou tableau vide
+  let pieces = JSON.parse(localStorage.getItem('pieces')) || [];
+
+  const searchInput = document.getElementById('search-input');
+  const resultsDiv = document.getElementById('results');
+  const addForm = document.getElementById('add-form');
+  const btnShowAdd = document.getElementById('btn-show-add');
+  const btnAdd = document.getElementById('btn-add');
+
+  // Afficher la liste filtrée selon la recherche
+  function afficherResultats(filter='') {
+    resultsDiv.innerHTML = '';
+    let filtered = pieces.filter(item => {
+      const searchLower = filter.toLowerCase();
+      return item.ref.toLowerCase().includes(searchLower) || item.description.toLowerCase().includes(searchLower);
+    });
+
+    if(filtered.length === 0){
+      resultsDiv.innerHTML = '<p style="text-align:center; color:#777;">Aucun résultat trouvé.</p>';
+      return;
+    }
+
+    filtered.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'result-item';
+
+      const img = document.createElement('img');
+      img.src = item.image || 'https://via.placeholder.com/120x80?text=No+Image';
+      img.alt = item.ref;
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'result-info';
+
+      const refStrong = document.createElement('strong');
+      refStrong.textContent = 'Référence : ' + item.ref;
+
+      const descP = document.createElement('p');
+      descP.textContent = item.description;
+
+      infoDiv.appendChild(refStrong);
+      infoDiv.appendChild(descP);
+
+      const btnDel = document.createElement('button');
+      btnDel.className = 'btn-delete';
+      btnDel.textContent = 'Supprimer';
+      btnDel.onclick = () => {
+        if(confirm(`Supprimer la pièce "${item.ref}" ?`)) {
+          pieces = pieces.filter(p => p.ref !== item.ref);
+          sauvegarderPieces();
+          afficherResultats(searchInput.value);
+        }
+      };
+
+      div.appendChild(img);
+      div.appendChild(infoDiv);
+      div.appendChild(btnDel);
+
+      resultsDiv.appendChild(div);
+    });
+  }
+
+  // Sauvegarder les données dans localStorage
+  function sauvegarderPieces() {
+    localStorage.setItem('pieces', JSON.stringify(pieces));
+  }
+
+  // Ajouter une nouvelle pièce
+  btnAdd.onclick = () => {
+    const ref = document.getElementById('ref-input').value.trim();
+    const desc = document.getElementById('desc-input').value.trim();
+    const img = document.getElementById('img-input').value.trim();
+
+    if(!ref || !desc) {
+      alert('Veuillez remplir le numéro de pièce et la description.');
+      return;
+    }
+
+    // Vérifier doublon
+    if(pieces.some(p => p.ref.toLowerCase() === ref.toLowerCase())) {
+      alert('Cette référence existe déjà.');
+      return;
+    }
+
+    pieces.push({ref, description: desc, image: img});
+    sauvegarderPieces();
+    afficherResultats(searchInput.value);
+
+    // Réinitialiser formulaire
+    document.getElementById('ref-input').value = '';
+    document.getElementById('desc-input').value = '';
+    document.getElementById('img-input').value = '';
+
+    addForm.style.display = 'none';
+  };
+
+  // Afficher/cacher formulaire ajout
+  btnShowAdd.onclick = () => {
+    if(addForm.style.display === 'none' || addForm.style.display === '') {
+      addForm.style.display = 'block';
+    } else {
+      addForm.style.display = 'none';
+    }
+  };
+
+  // Recherche en temps réel
+  document.getElementById('btn-search').onclick = () => {
+    afficherResultats(searchInput.value);
+  };
+
+  searchInput.addEventListener('keyup', () => {
+    afficherResultats(searchInput.value);
+  });
+
+  // Initialisation affichage
+  afficherResultats();
+</script>
+
+</body>
+</html>
