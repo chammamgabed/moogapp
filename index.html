@@ -12,50 +12,107 @@
     margin: 20px;
     color: #000;
   }
-  h1 { text-align: center; color: #007acc; }
-  #search-container, #add-container { max-width: 600px; margin: 10px auto; }
+  h1 {
+    text-align: center;
+    color: #007acc;
+  }
+  #search-container, #add-container {
+    max-width: 600px;
+    margin: 10px auto;
+  }
   input[type="text"] {
     width: calc(100% - 110px);
     font-size: 18px;
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 6px;
-  }
-  input[type="file"] {
-    margin-top: 6px;
+    box-sizing: border-box;
   }
   button {
-    font-size: 18px; padding: 10px 15px; margin-left: 10px;
-    border: none; border-radius: 6px; cursor: pointer; color: white;
+    font-size: 18px;
+    padding: 10px 15px;
+    margin-left: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
   }
-  #btn-search { background-color: #3399ff; }
-  #btn-show-add { background-color: #28a745; margin-top: 20px; }
-  #results { max-width: 600px; margin: 20px auto; }
+  #btn-search {
+    background-color: #3399ff;
+  }
+  #btn-show-add {
+    background-color: #28a745;
+    margin-top: 20px;
+  }
+  #results {
+    max-width: 600px;
+    margin: 20px auto;
+  }
   .result-item {
-    border: 1px solid #ddd; padding: 15px; border-radius: 8px;
-    margin-bottom: 15px; display: flex; gap: 15px; align-items: center;
-    color: black; /* default black text */
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
   }
-  .result-item img { width: 120px; height: 80px; object-fit: contain; border-radius: 6px; background: #f0f0f0; }
-  .result-info { flex-grow: 1; }
+  .result-item img {
+    width: 120px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #f0f0f0;
+  }
+  .result-info {
+    flex-grow: 1;
+  }
   .result-info strong {
     display: block;
     font-size: 18px;
     margin-bottom: 6px;
-    color: blue; /* رقم القطعة باللون الأزرق */
   }
-  .result-info p { margin: 0; font-size: 16px; color: black; }
-  .btn-delete { background-color: #cc3333; padding: 8px 12px; font-size: 16px; }
+  .result-info p {
+    margin: 0;
+    font-size: 16px;
+  }
+  .btn-delete {
+    background-color: #cc3333;
+    padding: 8px 12px;
+    font-size: 16px;
+  }
   #add-form {
-    display: none; max-width: 600px; margin: 0 auto 20px;
-    padding: 15px; border: 1px solid #ddd; border-radius: 8px;
+    display: none;
+    max-width: 600px;
+    margin: 0 auto 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
   }
-  #add-form label { display: block; margin-top: 10px; font-weight: bold; }
+  #add-form label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+  }
   #add-form input[type="text"], #add-form input[type="file"] {
-    width: 100%; padding: 8px; margin-top: 6px;
-    font-size: 16px; border-radius: 6px; border: 1px solid #ccc;
+    width: 100%;
+    padding: 8px;
+    margin-top: 6px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
   }
-  #add-form button { margin-top: 15px; background-color: #007acc; }
+  #add-form button {
+    margin-top: 15px;
+    background-color: #007acc;
+  }
+  #img-preview {
+    max-width: 120px;
+    margin-top: 10px;
+    display: none;
+    border-radius:6px;
+  }
 </style>
 </head>
 <body>
@@ -73,29 +130,19 @@
   <input type="text" id="ref-input" placeholder="Ex: 0280218002" />
   <label for="desc-input">Description</label>
   <input type="text" id="desc-input" placeholder="Description de la pièce" />
+  
+  <!-- Input pour choisir une image -->
   <label for="img-file-input">Choisir une image depuis la galerie</label>
   <input type="file" id="img-file-input" accept="image/*" />
+  <img id="img-preview" src="" alt="Aperçu de l'image" />
+
   <button id="btn-add">Valider</button>
 </div>
 
 <div id="results"></div>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script>
-  // Config Firebase - ضع بياناتك هنا كما في المثال السابق
-  const firebaseConfig = {
-    apiKey: "AIzaSyXXXXX-XXXXXXX-XXXXXXX",
-    authDomain: "pieces-auto.firebaseapp.com",
-    databaseURL: "https://pieces-auto-default-rtdb.firebaseio.com",
-    projectId: "pieces-auto",
-    storageBucket: "pieces-auto.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdefg123456"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
+  // Charger les données du localStorage ou tableau vide
   let pieces = JSON.parse(localStorage.getItem('pieces')) || [];
 
   const searchInput = document.getElementById('search-input');
@@ -103,73 +150,37 @@
   const addForm = document.getElementById('add-form');
   const btnShowAdd = document.getElementById('btn-show-add');
   const btnAdd = document.getElementById('btn-add');
+
+  // Variables pour la gestion de l'image
   const imgFileInput = document.getElementById('img-file-input');
+  const imgPreview = document.getElementById('img-preview');
+  let imageBase64 = '';
 
-  let imageBase64 = ""; // لتخزين صورة القطعة المختارة
-
-  // قراءة الصورة المختارة وتحويلها لـ base64
-  imgFileInput.addEventListener('change', function(event){
-    const file = event.target.files[0];
+  // Lecture de l'image depuis la galerie
+  imgFileInput.addEventListener('change', () => {
+    const file = imgFileInput.files[0];
     if(file) {
       const reader = new FileReader();
-      reader.onload = function(e){
-        imageBase64 = e.target.result; // صورة مشفرة بصيغة base64
+      reader.onload = function(e) {
+        imageBase64 = e.target.result;  // image en base64
+        imgPreview.src = imageBase64;
+        imgPreview.style.display = 'block';
       }
       reader.readAsDataURL(file);
+    } else {
+      imageBase64 = '';
+      imgPreview.src = '';
+      imgPreview.style.display = 'none';
     }
   });
 
-  // تحميل البيانات من Firebase عند بدء التشغيل
-  function chargerDepuisFirebase() {
-    db.ref('pieces').once('value', snapshot => {
-      const data = snapshot.val() || {};
-      pieces = Object.values(data);
-      sauvegarderPieces();
-      afficherResultats();
-    });
-  }
-
-  // دالة Levenshtein المسافة لبحث ذكي بسيط
-  function levenshtein(a, b) {
-    if(!a || !b) return Math.max(a.length, b.length);
-    const matrix = Array.from({length: a.length+1}, () => []);
-    for(let i=0; i<=a.length; i++) matrix[i][0] = i;
-    for(let j=0; j<=b.length; j++) matrix[0][j] = j;
-    for(let i=1; i<=a.length; i++) {
-      for(let j=1; j<=b.length; j++) {
-        matrix[i][j] = Math.min(
-          matrix[i-1][j] + 1,
-          matrix[i][j-1] +1,
-          matrix[i-1][j-1] + (a[i-1]===b[j-1] ? 0 :1)
-        );
-      }
-    }
-    return matrix[a.length][b.length];
-  }
-
-  // بحث ذكي: قبول نتائج مع المسافة أقل من حد معين
-  function rechercherPiecesAvecAI(filter='') {
-    filter = filter.toLowerCase().trim();
-    if(!filter) return pieces;
-
-    const seuilDistance = 3; // الحد الأقصى للمسافة المقبولة
-
-    return pieces.filter(item => {
-      const ref = item.ref.toLowerCase();
-      const desc = item.description.toLowerCase();
-
-      // مسافة ليڤنشتاين أقل من الحد
-      const distRef = levenshtein(filter, ref);
-      const distDesc = levenshtein(filter, desc);
-
-      return ref.includes(filter) || desc.includes(filter) || distRef <= seuilDistance || distDesc <= seuilDistance;
-    });
-  }
-
-  // عرض النتائج مع تلوين رقم القطعة باللون الأزرق
+  // Afficher la liste filtrée selon la recherche
   function afficherResultats(filter='') {
     resultsDiv.innerHTML = '';
-    let filtered = rechercherPiecesAvecAI(filter);
+    let filtered = pieces.filter(item => {
+      const searchLower = filter.toLowerCase();
+      return item.ref.toLowerCase().includes(searchLower) || item.description.toLowerCase().includes(searchLower);
+    });
 
     if(filtered.length === 0){
       resultsDiv.innerHTML = '<p style="text-align:center; color:#777;">Aucun résultat trouvé.</p>';
@@ -203,7 +214,6 @@
         if(confirm(`Supprimer la pièce "${item.ref}" ?`)) {
           pieces = pieces.filter(p => p.ref !== item.ref);
           sauvegarderPieces();
-          db.ref('pieces/' + item.ref).remove();
           afficherResultats(searchInput.value);
         }
       };
@@ -216,56 +226,74 @@
     });
   }
 
+  // Sauvegarder les données dans localStorage
   function sauvegarderPieces() {
     localStorage.setItem('pieces', JSON.stringify(pieces));
   }
 
+  // Ajouter une nouvelle pièce
   btnAdd.onclick = () => {
     const ref = document.getElementById('ref-input').value.trim();
     const desc = document.getElementById('desc-input').value.trim();
+    const img = imageBase64;  // image base64
 
     if(!ref || !desc) {
       alert('Veuillez remplir le numéro de pièce et la description.');
       return;
     }
 
+    // Vérifier doublon
     if(pieces.some(p => p.ref.toLowerCase() === ref.toLowerCase())) {
       alert('Cette référence existe déjà.');
       return;
     }
 
-    // استخدم صورة الـ base64 إذا اختارها المستخدم، وإلا اجعل الصورة فارغة
-    const img = imageBase64 || '';
-
-    const newPiece = {ref, description: desc, image: img};
-    pieces.push(newPiece);
+    pieces.push({ref, description: desc, image: img});
     sauvegarderPieces();
-    db.ref('pieces/' + ref).set(newPiece);
     afficherResultats(searchInput.value);
 
-    // إعادة تعيين الحقول
+    // Réinitialiser formulaire
     document.getElementById('ref-input').value = '';
     document.getElementById('desc-input').value = '';
     imgFileInput.value = '';
+    imgPreview.style.display = 'none';
     imageBase64 = '';
 
     addForm.style.display = 'none';
+
+    // --- Exemple pour envoyer au serveur (optionnel) ---
+    /*
+    fetch('https://votreapi.example.com/api/pieces', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ref, description: desc, image: img})
+    })
+    .then(res => res.json())
+    .then(data => console.log('Pièce envoyée:', data))
+    .catch(err => console.error('Erreur:', err));
+    */
   };
 
+  // Afficher/cacher formulaire ajout
   btnShowAdd.onclick = () => {
-    addForm.style.display = (addForm.style.display === 'block') ? 'none' : 'block';
+    if(addForm.style.display === 'none' || addForm.style.display === '') {
+      addForm.style.display = 'block';
+    } else {
+      addForm.style.display = 'none';
+    }
   };
 
+  // Recherche
   document.getElementById('btn-search').onclick = () => {
     afficherResultats(searchInput.value);
   };
-
   searchInput.addEventListener('keyup', () => {
     afficherResultats(searchInput.value);
   });
 
-  // بدء التطبيق بتحميل البيانات من Firebase
-  chargerDepuisFirebase();
+  // Initialisation affichage
+  afficherResultats();
 </script>
+
 </body>
 </html>
