@@ -1,0 +1,10 @@
+{
+  "name": "moog-app",
+  "version": "1.0.0",
+  "description": "API pieces détachées (Vercel Serverless + Express)",
+  "main": "api/index.js",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
