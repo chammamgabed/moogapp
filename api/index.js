@@ -6,10 +6,9 @@ const app = express();
 
 app.use(express.json());
 
-// مسار ملف البيانات
 const DATA_FILE = path.join(__dirname, 'pieces.json');
 
-// --- جلب كل القطع (GET) ---
+// جلب كل القطع (GET)
 app.get('/pieces', (req, res) => {
   try {
     const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
@@ -19,29 +18,13 @@ app.get('/pieces', (req, res) => {
   }
 });
 
-// --- إضافة قطعة جديدة (POST) ---
+// POST و DELETE غير مدعومين في هذا الإصدار التجريبي
 app.post('/pieces', (req, res) => {
-  try {
-    let data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    data.push(req.body);
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    res.json({ message: 'Pièce ajoutée.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de l\'ajout de la pièce.' });
-  }
+  res.status(501).json({ error: 'Ajout désactivé en mode demo.' });
 });
 
-// --- حذف قطعة (DELETE) ---
 app.delete('/pieces/:ref', (req, res) => {
-  try {
-    let data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    data = data.filter(p => p.ref !== req.params.ref);
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    res.json({ message: 'Pièce supprimée.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de la suppression.' });
-  }
+  res.status(501).json({ error: 'Suppression désactivée en mode demo.' });
 });
 
-// تصدير التطبيق لـ Vercel
 module.exports = app;
